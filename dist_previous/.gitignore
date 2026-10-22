@@ -1,0 +1,11 @@
+# Only the website files may be committed (written by make_deploy.py; see HOSTING.md section 7A).
+# Everything else that ends up in this folder by mistake is ignored.
+*
+!.gitignore
+!index.html
+!manifest.json
+!vercel.json
+!_headers
+!game/
+!game/*.bin
+!game/*.js
