@@ -1,6 +1,6 @@
 {
  "project": "WebThirdPerson",
- "built": "2026-10-22 02:29",
+ "built": "2026-11-01 11:24",
  "args": [
   "/WebThirdPerson/WebThirdPerson.uproject",
   "-loosefileloading",
@@ -11,47 +11,47 @@
  "files": {
   "UnrealGame.wasm": {
    "type": "application/wasm",
-   "size": 217143748,
-   "compressedSize": 51358659,
-   "sha256": "e670f171db920bfb72aeb6df56858f715a11c95ac6cdacc76d3e14143da707ef",
+   "size": 236494770,
+   "compressedSize": 56122554,
+   "sha256": "a26c3337a7581f4ae7fcb526825715e24f8ddcc8e398b4d2d1c020173fd86271",
    "parts": [
     {
-     "url": "game/UnrealGame.wasm.e670f171db92.part000.bin",
+     "url": "game/UnrealGame.wasm.a26c3337a758.part000.bin",
      "size": 20971520
     },
     {
-     "url": "game/UnrealGame.wasm.e670f171db92.part001.bin",
+     "url": "game/UnrealGame.wasm.a26c3337a758.part001.bin",
      "size": 20971520
     },
     {
-     "url": "game/UnrealGame.wasm.e670f171db92.part002.bin",
-     "size": 9415619
+     "url": "game/UnrealGame.wasm.a26c3337a758.part002.bin",
+     "size": 14179514
     }
    ]
   },
   "WebThirdPerson.data": {
    "type": "application/octet-stream",
-   "size": 173517629,
-   "compressedSize": 61033373,
-   "sha256": "03f8e9c26ab9b9d0952a4efb61ea7f83394e972d45ea284d181cf4a2f8b71bca",
+   "size": 170787156,
+   "compressedSize": 60452073,
+   "sha256": "19cb2e83c7f653b8e46fa279f55d72f376ba159dd79d92bf7484ce38637a66a9",
    "parts": [
     {
-     "url": "game/WebThirdPerson.data.03f8e9c26ab9.part000.bin",
+     "url": "game/WebThirdPerson.data.19cb2e83c7f6.part000.bin",
      "size": 20971520
     },
     {
-     "url": "game/WebThirdPerson.data.03f8e9c26ab9.part001.bin",
+     "url": "game/WebThirdPerson.data.19cb2e83c7f6.part001.bin",
      "size": 20971520
     },
     {
-     "url": "game/WebThirdPerson.data.03f8e9c26ab9.part002.bin",
-     "size": 19090333
+     "url": "game/WebThirdPerson.data.19cb2e83c7f6.part002.bin",
+     "size": 18509033
     }
    ]
   }
  },
  "scripts": [
-  "game/WebThirdPerson.data.70446182c5be.js",
-  "game/UnrealGame.9d4c0e44c89c.js"
+  "game/WebThirdPerson.data.029d18cc1952.js",
+  "game/UnrealGame.10e1d16658b1.js"
  ]
 }

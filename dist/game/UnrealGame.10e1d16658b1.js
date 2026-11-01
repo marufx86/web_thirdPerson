@@ -7707,6 +7707,45 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
   
   
   
+  var _emwgpuDeviceCreateRenderPipelineAsync = function(devicePtr, futureId, descriptor, pipelinePtr) {
+    devicePtr = bigintToI53Checked(devicePtr);
+    futureId = bigintToI53Checked(futureId);
+    descriptor = bigintToI53Checked(descriptor);
+    pipelinePtr = bigintToI53Checked(pipelinePtr);
+  
+  
+      var desc = WebGPU.makeRenderPipelineDesc(descriptor);
+      var device = WebGPU.getJsObject(devicePtr);
+       // createRenderPipelineAsync
+      WebGPU.Internals.futureInsert(futureId, device.createRenderPipelineAsync(desc).then((pipeline) => {
+         // createRenderPipelineAsync fulfilled
+        callUserCallback(() => {
+          WebGPU.Internals.jsObjectInsert(pipelinePtr, pipeline);
+          _emwgpuOnCreateRenderPipelineCompleted(futureId, 1,
+            BigInt(pipelinePtr), 0n);
+        });
+      }, (pipelineError) => {
+         // createRenderPipelineAsync rejected
+        callUserCallback(() => {
+          var sp = stackSave();
+          var messagePtr = stringToUTF8OnStack(pipelineError.message);
+          var status =
+            pipelineError.reason === 'validation' ? 3 :
+            pipelineError.reason === 'internal' ? 4 :
+            0;
+          assert(status);
+          _emwgpuOnCreateRenderPipelineCompleted(futureId, status,
+            BigInt(pipelinePtr), BigInt(messagePtr));
+          stackRestore(sp);
+        });
+      }));
+    ;
+  };
+
+  
+  
+  
+  
   function _emwgpuDeviceCreateShaderModule(devicePtr, descriptor, shaderModulePtr) {
     devicePtr = bigintToI53Checked(devicePtr);
     descriptor = bigintToI53Checked(descriptor);
@@ -9760,6 +9799,7 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
 
 
 
+
   var FS_createPath = (...args) => FS.createPath(...args);
 
 
@@ -10266,6 +10306,15 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('wasmMemory');
   ignoredModuleProp('wasmBinary');
 }
+function UEWebAudioInit(PreferredSampleRate,RingSeconds) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) { return 0; } var ctx; try { ctx = new AC({ latencyHint: 'interactive', sampleRate: PreferredSampleRate }); } catch (e) { ctx = new AC({ latencyHint: 'interactive' }); } var cap = Math.ceil(ctx.sampleRate * RingSeconds); var st = { ctx: ctx, cap: cap, left: new Float32Array(cap), right: new Float32Array(cap), read: 0, write: 0, count: 0, peak: 0, pushedFrames: 0, callbacks: 0 }; var node = ctx.createScriptProcessor(2048, 0, 2); node.onaudioprocess = function (e) { st.callbacks++; var outL = e.outputBuffer.getChannelData(0); var outR = e.outputBuffer.getChannelData(1); for (var i = 0; i < outL.length; i++) { if (st.count > 0) { outL[i] = st.left[st.read]; outR[i] = st.right[st.read]; st.read = (st.read + 1) % st.cap; st.count--; } else { outL[i] = 0; outR[i] = 0; } } }; node.connect(ctx.destination); st.node = node; var resume = function () { if (ctx.state !== 'running' && !st.paused) { ctx.resume(); } }; ['pointerdown', 'keydown', 'touchstart'].forEach(function (type) { document.addEventListener(type, resume, true); }); Module['ueAudio'] = st; return ctx.sampleRate; }
+function UEWebAudioQueuedFrames() { var st = Module['ueAudio']; return st ? st.count : 0; }
+function UEWebAudioIsRunning() { var st = Module['ueAudio']; return st && st.ctx.state === 'running' ? 1 : 0; }
+function UEWebAudioPush(Address,NumFrames,NumChannels) { var st = Module['ueAudio']; if (!st) { return; } var base = Address / 4; for (var f = 0; f < NumFrames && st.count < st.cap; f++) { var i = base + f * NumChannels; var l = HEAPF32[i]; var r = NumChannels > 1 ? HEAPF32[i + 1] : l; st.left[st.write] = l; st.right[st.write] = r; st.peak = Math.max(st.peak, Math.abs(l), Math.abs(r)); st.pushedFrames++; st.write = (st.write + 1) % st.cap; st.count++; } }
+function UEWebAudioTakePeak() { var st = Module['ueAudio']; if (!st) { return -1; } var p = st.peak; st.peak = 0; return p; }
+function UEWebAudioPushedFrames() { var st = Module['ueAudio']; return st ? st.pushedFrames : 0; }
+function UEWebAudioCallbacks() { var st = Module['ueAudio']; return st ? st.callbacks : 0; }
+function UEWebAudioSetPaused(bPaused) { var st = Module['ueAudio']; if (!st) { return; } st.paused = !!bPaused; if (bPaused) { st.ctx.suspend(); } else { st.ctx.resume(); } }
+function UEWebAudioClose() { var st = Module['ueAudio']; if (!st) { return; } st.node.disconnect(); st.ctx.close(); Module['ueAudio'] = null; }
 
 // Imports from the Wasm binary.
 var _malloc = makeInvalidEarlyAccess('_malloc');
@@ -10435,6 +10484,24 @@ function assignWasmExports(wasmExports) {
 
 var wasmImports = {
   /** @export */
+  UEWebAudioCallbacks,
+  /** @export */
+  UEWebAudioClose,
+  /** @export */
+  UEWebAudioInit,
+  /** @export */
+  UEWebAudioIsRunning,
+  /** @export */
+  UEWebAudioPush,
+  /** @export */
+  UEWebAudioPushedFrames,
+  /** @export */
+  UEWebAudioQueuedFrames,
+  /** @export */
+  UEWebAudioSetPaused,
+  /** @export */
+  UEWebAudioTakePeak,
+  /** @export */
   __assert_fail: ___assert_fail,
   /** @export */
   __call_sighandler: ___call_sighandler,
@@ -10580,6 +10647,8 @@ var wasmImports = {
   emwgpuDelete: _emwgpuDelete,
   /** @export */
   emwgpuDeviceCreateBuffer: _emwgpuDeviceCreateBuffer,
+  /** @export */
+  emwgpuDeviceCreateRenderPipelineAsync: _emwgpuDeviceCreateRenderPipelineAsync,
   /** @export */
   emwgpuDeviceCreateShaderModule: _emwgpuDeviceCreateShaderModule,
   /** @export */

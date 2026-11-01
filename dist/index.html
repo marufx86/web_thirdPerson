@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Third Person - Unreal Engine on the Web</title>
+<title>Unreal Engine on the Web</title>
 <link rel="icon" href="data:,">  <!-- no icon file: stops the browser's harmless "favicon.ico 404" message -->
 
 <style>
@@ -19,6 +19,9 @@
 	#stage:fullscreen { top: 0; }
 	/* The engine sets the canvas pixel size; CSS fits it into the page without stretching (letterbox). */
 	#canvas { width: 100%; height: 100%; object-fit: contain; display: block; outline: none; background: #000; }
+	#slow { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(0,0,0,.75);
+		color: #fff; font-size: 13px; text-align: center; display: none; max-width: 90%; z-index: 1; }
+	#slow a { color: var(--accent); margin-left: 8px; }
 	#hint { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(0,0,0,.65);
 		color: #fff; font-size: 13px; text-align: center; pointer-events: none; display: none; max-width: 90%; }
 	#loader { position: absolute; inset: 40px 0 0 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 2; }
@@ -37,7 +40,7 @@
 </head>
 <body>
 <div id="bar">
-	<span class="title">Third Person &mdash; Unreal Engine 5 on WebGPU</span>
+	<span class="title" id="title">Unreal Engine 5 on WebGPU</span>
 	<span class="spacer"></span>
 	<label title="Rendering resolution and detail. Changing it reloads the page (downloads come from the browser cache).">
 		Quality
@@ -53,6 +56,7 @@
 </div>
 <div id="stage">
 	<canvas id="canvas" tabindex="0"></canvas>
+	<div id="slow"></div>
 	<div id="hint">Click the picture to play &middot; W A S D move &middot; Space jump &middot; mouse looks around &middot; Esc frees the mouse<br>
 		<small>Keys not working? Switch your keyboard to English (Windows: Win + Space) &mdash; typing tools for other languages can block them.</small></div>
 </div>
@@ -77,15 +81,16 @@ const PRESETS = {
 function readSetting(key, fallback) { try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; } }
 function writeSetting(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* storage blocked: not remembered */ } }
 const params = new URLSearchParams(location.search);
-let quality = params.get('quality') || readSetting('ue-web-quality', 'high');
-if (!PRESETS[quality]) quality = 'high';
-const preset = PRESETS[quality];
+// Chosen by the player (menu or ?quality=), else picked from the GPU in checkBrowser (see defaultQuality).
+let quality = params.get('quality') || readSetting('ue-web-quality', '');
+if (!PRESETS[quality]) quality = '';
+let preset = PRESETS[quality];
 
 // ---------------------------------------------------------------------------------------------------------------
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), hint = $('hint'), logEl = $('log');
 const qualityEl = $('quality');
-qualityEl.value = quality;
+qualityEl.value = quality || 'high';
 qualityEl.onchange = () => { writeSetting('ue-web-quality', qualityEl.value); location.search = '?quality=' + qualityEl.value; };
 $('fullscreen').onclick = () => { $('stage').requestFullscreen?.().catch(() => {}); canvas.focus(); };
 $('logbtn').onclick = () => { document.body.classList.toggle('showlog'); $('logbtn').blur(); canvas.focus(); };
@@ -105,6 +110,12 @@ function setStatus(text) { $('status').textContent = text; }
 function setProgress(fraction) { $('progress').firstElementChild.style.width = (Math.max(0, Math.min(1, fraction)) * 100).toFixed(1) + '%'; }
 function fail(message) {
 	const box = $('error');
+	if (box.style.display === 'block') { log('ERROR: ' + message, 'err'); return; } // the first error is the one shown
+	// Also while playing: the loading screen comes back with the message (else the picture just stops or goes black)
+	$('loader').style.display = 'flex';
+	$('loader').querySelector('h1').textContent = engineRunning ? 'The game stopped' : 'The game could not start';
+	hint.style.display = 'none';
+	if (document.pointerLockElement) document.exitPointerLock();
 	box.style.display = 'block';
 	box.textContent = message + '\n\nIf you report this, open "Log" (top right) and copy its last lines.';
 	setStatus('Stopped.');
@@ -125,17 +136,69 @@ let engineRunning = false;
 document.addEventListener('pointerlockchange', () => { hint.style.display = engineRunning && document.pointerLockElement !== canvas ? 'block' : 'none'; });
 
 // ---------------------------------------------------------------------------------------------------------------
+const BROWSER_HINT = 'Use a current Chrome or Edge on Windows, macOS or Linux.';
 async function checkBrowser() {
+	log(`[page] browser: ${navigator.userAgent}`);
 	if (!navigator.gpu) {
-		throw new Error('This browser has no WebGPU. Use a current desktop Chrome or Edge (version 113 or newer).');
+		throw new Error('This browser has no WebGPU (or it is turned off; on Linux see chrome://gpu). ' + BROWSER_HINT);
 	}
-	const adapter = await navigator.gpu.requestAdapter();
+	// The engine is 64-bit WebAssembly (memory64: Chrome/Edge 133+). A module with just a 64-bit memory tests for it.
+	if (!WebAssembly.validate(new Uint8Array([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0, 5, 3, 1, 4, 0]))) {
+		throw new Error('This browser cannot run 64-bit WebAssembly, which the game needs. ' + BROWSER_HINT);
+	}
+	const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
 	if (!adapter) {
 		throw new Error('WebGPU is available but no graphics adapter was found. Update your graphics driver, or check chrome://gpu.');
 	}
-	if (typeof DecompressionStream === 'undefined') {
-		throw new Error('This browser cannot unpack the game files (no DecompressionStream). Use a current Chrome or Edge.');
+	const info = adapter.info || {};
+	log(`[page] GPU: vendor '${info.vendor || '?'}', architecture '${info.architecture || '?'}', device '${info.device || ''}' ${info.description || ''}`);
+	if (!adapter.features.has('texture-compression-bc')) {
+		throw new Error('This GPU/browser does not offer the texture format the game uses (WebGPU "texture-compression-bc"). ' + BROWSER_HINT);
 	}
+	if (typeof DecompressionStream === 'undefined') {
+		throw new Error('This browser cannot unpack the game files (no DecompressionStream). ' + BROWSER_HINT);
+	}
+	if (!quality) {
+		quality = defaultQuality(info);
+		preset = PRESETS[quality];
+		qualityEl.value = quality;
+		log(`[page] no quality chosen yet: ${quality} for this GPU (the menu at the top changes it)`);
+	}
+}
+
+// First-visit quality. Integrated GPUs (Intel, most Macs: Apple chips share the laptop's memory bandwidth) get a
+// lower resolution than dedicated graphics cards; the slow-frame check below suggests going lower still.
+function defaultQuality(info) {
+	const vendor = (info.vendor || '').toLowerCase();
+	if (vendor.includes('intel') || vendor.includes('qualcomm') || vendor.includes('arm')) return 'low';
+	if (vendor.includes('apple')) return 'medium';
+	return 'high';
+}
+
+// After the game runs for a while: if the frame rate stays low, suggest a lower quality (once, not automatic: the
+// player may prefer the look). Frames are counted with requestAnimationFrame, which runs once per engine frame here.
+function watchFrameRate() {
+	const order = ['low', 'medium', 'high', 'epic'];
+	if (order.indexOf(quality) <= 0) return;
+	// The first seconds of play are skipped: new areas still compile shaders then (short stalls on every computer).
+	const skipUntil = performance.now() + 15000;
+	let frames = 0, start = 0;
+	function tick(now) {
+		if (now < skipUntil) { requestAnimationFrame(tick); return; }
+		if (!start) start = now;
+		frames++;
+		const seconds = (now - start) / 1000;
+		if (seconds < 20) { requestAnimationFrame(tick); return; }
+		const fps = frames / seconds;
+		log(`[page] ${fps.toFixed(0)} frames per second over ${seconds.toFixed(0)} s of play`);
+		if (fps < 25 && !$('error').textContent) {
+			const lower = order[order.indexOf(quality) - 1];
+			$('slow').innerHTML = `Running at ${fps.toFixed(0)} frames per second. <a href="?quality=${lower}" onclick="writeSetting('ue-web-quality', '${lower}')">Switch to ${lower[0].toUpperCase() + lower.slice(1)} quality</a> for a smoother game. <a href="#" id="slowclose">Keep ${quality}</a>`;
+			$('slow').style.display = 'block';
+			$('slowclose').onclick = e => { e.preventDefault(); $('slow').style.display = 'none'; canvas.focus(); };
+		}
+	}
+	requestAnimationFrame(tick);
 }
 
 // Downloads all parts (4 at a time) with progress, then gzip-decompresses each file into a blob: URL.
@@ -200,6 +263,9 @@ async function start() {
 	const response = await fetch('manifest.json', { cache: 'no-cache' });
 	if (!response.ok) throw new Error('manifest.json not found (HTTP ' + response.status + '). Was the whole dist folder uploaded?');
 	const manifest = await response.json();
+	// Page title = project name (e.g. WebThirdPerson)
+	document.title = manifest.project + ' - Unreal Engine on the Web';
+	$('title').textContent = manifest.project + ' \u2014 Unreal Engine 5 on WebGPU';
 	const urls = await downloadGame(manifest);
 
 	canvas.width = preset.width;
@@ -208,10 +274,15 @@ async function start() {
 	//   r.MaterialQualityLevel 1 - levels 0-1 would switch materials to Low/Medium versions the cook did not produce.
 	//   r.SkeletalMeshLODBias 0  - KNOWN BUG (open): lower LODs of skinned meshes render too dark in the WebGPU port,
 	//                              so the presets keep the full-detail character.
+	//   r.ScreenPercentage 100   - the canvas size already is the preset's resolution; scalability levels 0-2 would
+	//                              render smaller still (High: 87%) and upscale, which looked blurry (StackOBot).
 	// Extra console commands for troubleshooting: ?cmds=stat~fps,r.Foo~1 ('~' = space, ',' separates commands)
 	const extraCmds = (params.get('cmds') || '').replaceAll('~', ' ');
-	const args = manifest.args.concat([`-ResX=${preset.width}`, `-ResY=${preset.height}`,
-		`-ExecCmds=scalability ${preset.scalability},r.MaterialQualityLevel 1,r.SkeletalMeshLODBias 0` + (extraCmds ? ',' + extraCmds : '')]);
+	// Extra command line arguments, e.g. ?args=-dpcvars=r.PSOPrecaching=0,r.Foo=1 ('+' separates arguments). Unlike
+	// cmds, these apply from the start, before anything loads.
+	const extraArgs = (params.get('args') || '').split(' ').filter(a => a);
+	const args = manifest.args.concat(extraArgs, [`-ResX=${preset.width}`, `-ResY=${preset.height}`,
+		`-ExecCmds=scalability ${preset.scalability},r.MaterialQualityLevel 1,r.SkeletalMeshLODBias 0,r.ScreenPercentage 100` + (extraCmds ? ',' + extraCmds : '')]);
 	setStatus('Starting the engine (the first start compiles shaders and can take a little while)…');
 	setProgress(0.97);
 	window.Module = {
@@ -227,10 +298,15 @@ async function start() {
 				$('loader').style.display = 'none';
 				hint.style.display = 'block';
 				canvas.focus();
+				watchFrameRate();
 			}
 			if (!text.startsWith('[Web] EngineTick')) log(text, /Error:|Fatal/.test(text) ? 'err' : (/Warning:/.test(text) ? 'warn' : ''));
 		},
-		printErr: text => { console.error(text); log(text, 'err'); },
+		printErr: text => {
+			console.error(text); log(text, 'err');
+			// The browser took the GPU away (out of GPU memory, driver reset): nothing is drawn any more, the picture freezes.
+			if (text.startsWith('[WebGPU] Device lost')) fail('The browser stopped the graphics (GPU device lost). Reload the page to continue.\n' + text);
+		},
 		onAbort: what => fail('The engine stopped: ' + what),
 	};
 	log(`[page] quality ${quality} (${preset.width}x${preset.height}, scalability ${preset.scalability}); build ${manifest.built}`);
