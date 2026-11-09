@@ -3,64 +3,111 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Unreal Engine on the Web</title>
-<link rel="icon" href="data:,">  <!-- no icon file: stops the browser's harmless "favicon.ico 404" message -->
+<title>dotengine &middot; Unreal Engine on the Web</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232c1182'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%237d58f5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-	:root { --bg: #0d0f13; --panel: #171a21; --line: #2a2f3a; --text: #dde2ea; --dim: #8b93a1; --accent: #4f9cff; --bad: #ff7a7a; }
-	html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
-	#bar { position: absolute; top: 0; left: 0; right: 0; height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 12px;
-		background: var(--panel); border-bottom: 1px solid var(--line); z-index: 3; box-sizing: border-box; }
-	#bar .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	/* dotengine theme (theme/theme.css; colours sampled from theme/logo.png). Always the dark variant: the page frames
+	   a game picture, and brand bands (bar, loading screen) are indigo in both modes anyway. */
+	:root {
+		--brand-indigo: #2c1182; --brand-lavender: #a5a5d3; --brand-violet: #7d58f5; --brand-mist: #e8e1ff;
+		--accent: var(--brand-violet); --accent-hover: #6a43e8; --accent-ink: #bba8ff;
+		--bg: #12083a; --surface: #1b0d55; --surface-2: #241270; --text: #f3f0ff; --muted: #bcbae0; --border: #3a2696;
+		--bad: #ffb4b4;
+		--font-display: "Fredoka", ui-rounded, "Segoe UI", system-ui, sans-serif;
+		--font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+		--bar-h: 56px;
+		color-scheme: dark;
+	}
+	html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font-sans); overflow: hidden; -webkit-text-size-adjust: 100%; }
+	h1 { font-family: var(--font-display); font-weight: 600; line-height: 1.12; letter-spacing: -0.01em; text-wrap: balance; }
+	a { color: var(--accent-ink); text-underline-offset: 3px; }
+	:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+	#bar { position: absolute; top: 0; left: 0; right: 0; height: var(--bar-h); display: flex; align-items: center; gap: 12px; padding: 0 16px;
+		background: var(--brand-indigo); color: var(--brand-mist); border-bottom: 1px solid rgb(165 165 211 / .25); z-index: 3; box-sizing: border-box; }
+	.logotype { display: inline-flex; align-items: baseline; font-family: var(--font-display); font-weight: 600; font-size: 21px; letter-spacing: -0.02em;
+		line-height: 1; color: var(--brand-mist); white-space: nowrap; flex: none; }
+	.logotype .dot { margin-right: .08em; display: inline-block; width: .36em; height: .36em; border-radius: 999px; background: var(--brand-violet); }
+	#bar .divider { width: 1px; height: 22px; background: rgb(165 165 211 / .35); flex: none; }
+	#bar .title { color: var(--brand-lavender); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 	#bar .spacer { flex: 1; }
-	#bar select, #bar button { font: 13px system-ui, sans-serif; background: #232834; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
-	#bar button:hover, #bar select:hover { border-color: var(--accent); }
-	#stage { position: absolute; top: 40px; left: 0; right: 0; bottom: 0; background: #000; display: flex; align-items: center; justify-content: center; }
+	#bar label { display: flex; align-items: center; gap: 8px; color: var(--brand-lavender); font-size: 13px; white-space: nowrap; }
+	/* .btn-on-brand from the theme, a little shorter so the bar does not take height from the game */
+	.pill { font: 600 13px var(--font-sans); min-height: 36px; padding: 0 14px; border-radius: 999px; border: 2px solid var(--brand-lavender);
+		background-color: transparent; color: var(--brand-mist); cursor: pointer; white-space: nowrap; transition: border-color .15s, background-color .15s; }
+	.pill:hover { border-color: var(--brand-mist); background-color: rgb(255 255 255 / .06); }
+	select.pill { appearance: none; -webkit-appearance: none; padding-right: 32px; background-repeat: no-repeat; background-position: right 12px center;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23e8e1ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+	select.pill option { background: var(--surface); color: var(--text); }
+	@media (max-width: 639px) { #bar { gap: 8px; padding: 0 10px; } #bar .lbl, #bar .divider { display: none; } .pill { padding: 0 11px; } select.pill { padding-right: 28px; background-position: right 9px center; } }
+	@media (max-width: 479px) { #bar .title { display: none; } .logotype { font-size: 18px; } .pill { padding: 0 9px; } select.pill { padding-right: 26px; background-position: right 8px center; } }
+
+	#stage { position: absolute; top: var(--bar-h); left: 0; right: 0; bottom: 0; background: #000; display: flex; align-items: center; justify-content: center; }
 	#stage:fullscreen { top: 0; }
 	/* The engine sets the canvas pixel size; CSS fits it into the page without stretching (letterbox). */
 	#canvas { width: 100%; height: 100%; object-fit: contain; display: block; outline: none; background: #000; }
-	#slow { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(0,0,0,.75);
-		color: #fff; font-size: 13px; text-align: center; display: none; max-width: 90%; z-index: 1; }
-	#slow a { color: var(--accent); margin-left: 8px; }
-	#hint { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(0,0,0,.65);
-		color: #fff; font-size: 13px; text-align: center; pointer-events: none; display: none; max-width: 90%; }
-	#loader { position: absolute; inset: 40px 0 0 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 2; }
-	#loader .box { width: min(520px, 90vw); }
-	#loader h1 { font-size: 22px; margin: 0 0 4px; }
-	#loader .sub { color: var(--dim); margin-bottom: 22px; }
-	#progress { height: 10px; background: #232834; border-radius: 5px; overflow: hidden; }
-	#progress div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-	#status { margin-top: 10px; color: var(--dim); min-height: 1.4em; }
-	#error { display: none; margin-top: 18px; padding: 12px; border: 1px solid var(--bad); border-radius: 8px; color: var(--bad); white-space: pre-wrap; }
-	#log { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; margin: 0; padding: 8px 12px; overflow: auto; z-index: 4; display: none;
-		background: rgba(10,12,16,.95); border-top: 1px solid var(--line); font: 12px/1.35 Consolas, monospace; white-space: pre-wrap; color: #b8c0cc; }
+	.toast { position: absolute; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 1.25rem; box-sizing: border-box;
+		background: rgb(44 17 130 / .88); border: 1px solid rgb(165 165 211 / .35); color: var(--brand-mist); font-size: 13px; text-align: center;
+		display: none; max-width: 90%; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+	#slow { top: 14px; z-index: 1; }
+	#slow a { margin-left: 8px; font-weight: 600; }
+	#hint { bottom: 18px; pointer-events: none; }
+	#hint small { color: var(--brand-lavender); }
+
+	#loader { position: absolute; inset: var(--bar-h) 0 0 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+		background: var(--brand-indigo); color: var(--brand-mist); z-index: 2; }
+	#loader .orbit { position: absolute; right: 0; bottom: 0; width: 15rem; height: auto; opacity: .4; pointer-events: none; user-select: none; }
+	@media (max-width: 639px) { #loader .orbit { display: none; } }
+	#loader .box { position: relative; width: min(560px, calc(100vw - 32px)); }
+	.eyebrow { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: .875rem; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-lavender); }
+	#loader h1 { margin: .6rem 0 .6rem; font-size: clamp(1.9rem, 5vw, 2.75rem); color: var(--brand-mist); }
+	#loader .sub { margin-bottom: 1.75rem; font-size: 15px; color: var(--brand-lavender); }
+	#progress { height: 10px; background: rgb(255 255 255 / .12); border-radius: 999px; overflow: hidden; }
+	#progress div { height: 100%; width: 0; background: var(--brand-violet); border-radius: 999px; transition: width .2s; }
+	#status { margin-top: .75rem; min-height: 1.5em; font-size: 13px; color: var(--brand-lavender); }
+	#error { display: none; margin-top: 1.25rem; padding: 14px 16px; border: 1px solid rgb(255 122 122 / .55); border-radius: 1.25rem;
+		background: rgb(120 20 40 / .35); color: var(--bad); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+	#log { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; margin: 0; padding: 10px 16px; overflow: auto; z-index: 4; display: none; box-sizing: border-box;
+		background: rgb(18 8 58 / .96); border-top: 1px solid var(--border); font: 12px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace; white-space: pre-wrap; color: var(--muted); }
 	body.showlog #log { display: block; }
 	.err { color: #ff9a9a; } .warn { color: #e6c86e; }
+	@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 <div id="bar">
+	<span class="logotype"><span class="dot" aria-hidden="true"></span>dotengine</span>
+	<span class="divider" aria-hidden="true"></span>
 	<span class="title" id="title">Unreal Engine 5 on WebGPU</span>
 	<span class="spacer"></span>
 	<label title="Rendering resolution and detail. Changing it reloads the page (downloads come from the browser cache).">
-		Quality
-		<select id="quality">
+		<span class="lbl">Quality</span>
+		<select id="quality" class="pill">
 			<option value="low">Low</option>
 			<option value="medium">Medium</option>
 			<option value="high">High</option>
 			<option value="epic">Epic</option>
 		</select>
 	</label>
-	<button id="fullscreen" title="Full screen (Esc to leave)">Full screen</button>
-	<button id="logbtn" title="Engine log, useful for bug reports">Log</button>
+	<button id="fullscreen" class="pill" title="Full screen (Esc to leave)">Full screen</button>
+	<button id="logbtn" class="pill" title="Engine log, useful for bug reports">Log</button>
 </div>
 <div id="stage">
 	<canvas id="canvas" tabindex="0"></canvas>
-	<div id="slow"></div>
-	<div id="hint">Click the picture to play &middot; W A S D move &middot; Space jump &middot; mouse looks around &middot; Esc frees the mouse<br>
+	<div id="slow" class="toast"></div>
+	<div id="hint" class="toast">Click the picture to play &middot; W A S D move &middot; Space jump &middot; mouse looks around &middot; Esc frees the mouse<br>
 		<small>Keys not working? Switch your keyboard to English (Windows: Win + Space) &mdash; typing tools for other languages can block them.</small></div>
 </div>
-<div id="loader"><div class="box">
+<div id="loader">
+	<!-- orbit decoration traced from the logo (theme/orbit.svg) -->
+	<svg class="orbit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 700" width="460" height="700" aria-hidden="true" focusable="false"><path fill="#E8E1FF" fill-rule="evenodd" d="M 308.1 31.5C290.8 37.9 269.3 60.3 254.4 87.6C252.4 91.4 250.4 94.7 250.1 95C249 96 237 121.6 237 123.1C237 124.5 230.7 124.2 228.5 122.7C227.4 122 224 120.7 221 119.8C218 118.8 213 117.3 210 116.3C205.7 114.9 201.1 114.5 188.5 114.5C170.3 114.5 165.6 116 158 124.1C150.7 132 149.5 135.7 149.5 151.5C149.5 167.2 150.6 172.2 158 191.5C160.8 198.7 169.3 215.9 173.7 223.3C176.6 228.1 179 232.3 179 232.5C179 233 189.5 248.4 192.2 251.9C195.2 255.9 194.5 257.4 188.8 259.4C185.9 260.4 181.3 262 178.5 263.1C175.8 264.1 168.1 266.9 161.5 269.4C148.3 274.3 139.2 278 131.5 281.5C128.8 282.8 124.7 284.6 122.5 285.5C103.1 293.7 64.1 316.3 59 322.5C58.3 323.3 57.2 324 56.6 324C54.7 324 41.7 334.7 37.7 339.8C32.7 345.8 25.8 357.5 25.4 360.3C25.3 361.5 24.4 364.8 23.6 367.5C18.3 384.5 26.3 400.9 46.3 414.4C59.6 423.3 85.9 435.2 107.5 442C113 443.8 118.5 445.6 119.8 446.1C121.1 446.6 122.5 446.8 122.8 446.6C124.1 445.9 135.4 448.6 135.8 449.8C136 450.4 133.6 452.2 130.5 453.6C127.3 455.1 125.1 456.8 125.3 457.5C125.7 458.4 102.1 471.5 100 471.5C98.2 471.5 65.5 492.2 64.8 493.7C64.7 494.2 61.4 497 57.5 500C47.1 508.2 46.3 508.9 38.5 516.7C30.7 524.4 22.6 535.8 19.6 543C18.6 545.5 17.3 548.5 16.7 549.8C15.1 553.1 15.2 568.1 16.9 571.6C17.6 573.2 18.9 576 19.8 577.7C20.6 579.5 23.4 583.2 26.1 585.9C43.9 604.2 81.5 608.6 129.2 597.9C132.4 597.2 135.3 596.9 135.7 597.4C136.1 597.8 134.6 601.8 132.3 606.3C127.6 615.6 124 623.5 124 624.6C124 625 123.2 626.3 122.1 627.4C120.2 629.6 117.3 637.6 114.5 649C113.6 652.6 112.4 657.2 111.9 659.4C110.4 664.8 110.7 688.5 112.3 694.5C113.6 699.5 113.6 699.5 120.3 699.8C127 700.1 127 700.1 126.4 695.8C126 693.4 125.3 690.5 124.9 689.2C121.7 680.5 125.1 655.9 132.1 636.7C133.7 632.4 135 628.2 135 627.4C135 624.7 148.8 597.7 151.1 596C151.4 595.7 152 594.5 152.4 593.3C153.2 590.8 158 588.3 170 584.2C174.7 582.5 181.3 580.2 184.6 579C188 577.7 191.4 576.9 192.2 577.3C193.6 577.8 200.4 588.1 204.9 596.5C205.8 598.1 206.7 599.7 207 600C207.3 600.3 209.7 603.9 212.5 608C215.2 612.1 219.2 617.9 221.3 620.8C223.5 623.8 225.3 626.8 225.4 627.5C225.9 630.6 242.6 650.7 255.3 663.3C266.6 674.7 268.9 677.4 267.9 678.6C267.3 679.4 266.3 680 265.7 680C264.4 680 246.6 692.1 241.5 696.5C237.5 700 237.5 700 248.2 700C258.7 700 259.1 699.9 264.2 696.6C272.2 691.6 278.8 689 285.9 688.1C293 687.2 308.8 688.3 311.7 689.9C312.7 690.4 315.8 691.6 318.7 692.4C357.3 704.1 383.8 682.2 390.1 633.5C392.3 615.8 390.7 576.5 387.5 570.3C386.7 568.7 386 566.4 386 565C386 563.6 385.5 560.9 385 559C384.4 557.1 383.5 553 383 550C381.3 540.7 377.4 524.1 374.6 514C372.2 505.6 372.4 503.8 375.8 504.6C383.7 506.4 386.8 507.2 389.5 508.5C397.8 512.2 437.1 519 450.1 519C460 519 460 519 460 512.5C460 506 460 506 453.8 506C441.4 506 411.2 501.2 393.6 496.4C390.9 495.6 388.4 495.2 388 495.5C387.1 496 375.9 493.7 371.3 492C367.9 490.8 367.4 489.8 363 476.3C360.5 468.6 357.5 460.7 354.9 455.4C352.1 449.5 352.3 448.9 360.4 436.7C372.2 418.9 379.9 403.8 384.8 388.8C385.8 385.7 387.1 382.5 387.8 381.8C388.4 381.1 389.7 376 390.8 370.5C392.6 360.8 392.8 360.4 396.6 357.8C398.7 356.3 401.1 355.1 401.9 355C405 355 431.6 376.9 449.5 394.3L459.5 404 459.8 394.3C460.1 384.5 460.1 384.5 452.3 377.1C448 373 442.2 367.8 439.4 365.6C420.7 350.6 416 346.6 416 345.6C416 345 419 342.1 422.8 339.2C426.5 336.2 436.4 327.3 444.8 319.3C460 304.8 460 304.8 460 294.8L460 284.8 442.8 302.2C426.5 318.6 410.3 333.2 405.3 335.9C403.5 336.8 402.5 336.8 400.3 335.5C393.5 331.8 392.3 330 391 321C390.3 316.3 389 310.7 388 308.5C383.9 299.1 383 296.9 383 295.8C383 295.2 379.1 286.8 374.3 277.1C364.8 258 364.6 257 367.4 246.3C370.2 235.2 372 226.2 372 223.2C372 216.4 374.6 215.1 393 213.3C424.8 210.1 446.6 210.9 458.3 215.5C459.8 216.1 460 215.4 460 208.3C460 200.3 460 200.3 450 198.7C437.9 196.6 425.6 196.6 408.8 198.5C393.4 200.2 388.7 201 388 202.1C387.7 202.6 384.9 203.2 381.9 203.6C375.2 204.4 374.6 203.6 376.1 195.5C377.4 188.6 376.7 131.7 375.2 120.2C373.2 104.9 369.5 87.7 365.3 74.5C353.7 38.1 332.8 22.3 308.1 31.5M312.4 42.9C294.8 49.2 274.1 73.1 257.1 106.5C244.3 131.8 244.3 130.4 256.5 136.9C278 148.4 314.9 180.7 330.3 201.5C338.9 213.1 337.7 212.2 343.9 211.7C354 210.8 360.5 209 362.1 206.7C364 203.8 364.7 137 363 125.8C362.3 121.8 361.5 115.1 361 110.9C360.6 106.7 359.7 101.7 359.2 99.9C358.6 98 357.4 92.9 356.5 88.5C355.6 84.1 354.4 79.5 353.9 78.2C353.4 76.9 353 75.2 353 74.3C353 72.9 347.9 61.9 344.6 56.1C341.8 51.3 333.2 44.4 327.9 42.7C321.4 40.6 318.8 40.6 312.4 42.9M182 125.7C165.4 128.6 160.5 134.6 160.6 152C160.7 166 164.7 180 174.5 200.3C181.7 215.1 184.2 219.7 192.9 233C200.3 244.3 200.1 244.4 204.5 223.5C206.3 215.1 207.4 210.8 211.4 197C212.7 192.3 214.6 185.8 215.6 182.5C217.9 174.2 224.7 153.9 226.7 149C229.8 141.5 230.6 137.9 229.6 137.1C225.7 133.8 212.6 129.5 199.1 127C188.7 125 186.8 124.9 182 125.7M240.1 145.1C238.9 147.2 228.6 176.2 226.9 182.5C226.5 184.2 224.7 190.5 223 196.5C217.3 216.3 213.9 230.3 212 241C211.5 243.5 210.9 246.8 210.5 248.4C209.7 251.2 209.7 251.2 214.1 250.5C216.5 250.1 220.1 249.2 222 248.5C223.9 247.8 228.2 246.5 231.5 245.5C234.8 244.6 238.4 243.4 239.5 243C241.5 242.2 245 241.1 259 237C263.1 235.8 267.4 234.5 268.5 234.1C273.2 232.2 277.7 230.7 281 230C282.9 229.5 287 228.4 290 227.4C297.8 225.1 303.5 223.4 311.5 221.1C323.8 217.6 324.3 217.3 323.5 214.2C323.1 212.7 322.5 211.3 322.1 211C321.7 210.7 319.7 208.3 317.5 205.5C312 198.5 293.2 179.5 285.8 173.5C282.5 170.8 279.2 168 278.6 167.5C272.4 161.8 244.2 143 241.8 143C241.6 143 240.9 144 240.1 145.1M351.3 220.7C347 221.5 346 225.7 349.3 229.3C350 230 351.4 232.2 352.4 234.3C354.9 239.2 357.3 238.8 358.2 233.5C358.6 231.3 359.3 227.6 359.8 225.3C360.3 223 360.5 220.8 360.2 220.5C359.6 219.9 354.7 220 351.3 220.7M326 227.5C324.1 228.3 321.5 228.9 320.2 228.9C319 229 317.2 229.4 316.2 229.9C315.3 230.5 311.8 231.6 308.5 232.5C305.2 233.4 300.7 234.8 298.5 235.6C296.2 236.4 293.7 237 292.8 237C291.8 237 289.6 237.6 287.8 238.4C286 239.2 281.4 240.7 277.5 241.9C260.2 247 246.1 251.3 241 252.9C238 254 232.8 255.6 229.5 256.5C226.2 257.5 222.1 258.9 220.3 259.7C218.6 260.4 216.7 261 216.1 261C210.7 261 236.2 295.7 245.6 301.3C246.4 301.7 248.7 301.6 250.7 301C280.1 292.1 306 290.1 323.5 295.4C336 299.2 337 299.4 338 298.4C339.1 297.3 342.5 288.8 344 283.5C344.5 281.9 346 277.1 347.4 273C350.8 263.1 350.9 255 347.5 249.5C346.1 247.3 344.5 244.3 343.9 242.8C343.3 241.2 342.4 240 341.9 240C341.4 240 341 239.4 340.9 238.8C340.9 238.1 339.2 235 337.2 232C333.1 226 331.6 225.4 326 227.5M182 272.3C177.9 273.9 172.9 275.9 171 276.7C161.8 280.4 155.9 283 152.7 284.6C151.1 285.4 149.2 286 148.5 286C147.8 286 145.9 286.7 144.3 287.5C142.8 288.2 139.3 289.9 136.5 291.1C127.4 295.1 101.6 307.9 96.5 311C93.8 312.6 90.3 314.5 88.8 315.1C87.2 315.7 86 316.6 86 317.1C86 317.6 85.5 318 84.9 318C84 318 80.6 320.2 73.2 325.5C72.4 326.1 70.6 327.7 69.1 329.1C67.7 330.5 63.1 334.2 58.9 337.3C50 343.8 45.7 348.5 41 357C39.1 360.4 37 363.7 36.4 364.4C34.5 366.4 32.7 376.9 33.4 381.4C35.3 393 42.1 399.5 63 409.7C79.1 417.6 98.2 426 99.9 426C100.5 426 101 426.4 101 426.9C101 428.1 112.6 432.3 113.9 431.6C114.4 431.3 118.6 431.9 123.1 433C127.7 434.1 131.5 434.8 131.6 434.7C131.7 434.6 130.7 429.1 129.4 422.5C121 380.2 125.6 351.9 143.1 338.8C149.6 334 164.7 326.6 171.5 325C174.3 324.4 179.4 322.2 183 320.1C189.5 316.4 189.5 316.4 190.3 308C190.7 303.3 191.9 293.1 193.1 285.2C194.2 277.4 194.8 270.5 194.5 270C193.5 268.4 190 269 182 272.3M205.5 276C205.2 276.6 204.5 280.7 204 285.3C203.5 289.8 202.6 296.2 202 299.5C200.3 309.6 200.5 310.3 204.3 309.7C206 309.4 210 308.4 213 307.5C216 306.6 220.5 305.4 223 304.8C230.4 303.2 230.2 303.4 228.6 300.3C227.8 298.7 226.3 296.6 225.3 295.5C224.3 294.4 221.9 291.5 220.1 289C218.2 286.5 216.2 284.1 215.6 283.5C215 283 213.2 280.8 211.7 278.8C208.9 275 206.7 274.1 205.5 276M358.2 279.3C356.3 283.2 351.8 294.5 349.9 300.2C348.4 304.6 348.6 304.9 355.8 308.8C358.6 310.3 364.1 313.2 368.1 315.3C376.9 320.1 378.5 319.8 376.6 313.8C375.8 311.4 374.6 307.7 374 305.5C372.7 301.1 371.2 297.6 366.9 288.4C365.3 285.1 364 281.9 364 281.3C364 280.3 360.8 277 359.8 277C359.6 277 358.8 278 358.2 279.3M284.8 304.5C284.5 304.8 281.4 305.5 277.9 306C266.4 307.8 256 310.7 256 312.1C256 313.1 263.7 323.8 265.6 325.5C266.3 326.1 268.3 328.5 270.2 331C272 333.5 277.1 340 281.5 345.4C285.9 350.9 292 358.5 295 362.4C298.1 366.3 301.2 369.6 302 369.8C304 370.1 309.8 360.3 320.7 337.9C331.2 316.4 332.4 313.5 331.7 311.6C331.1 310.2 325.7 308.3 314.2 305.5C308.2 304.1 286 303.3 284.8 304.5M217 317.7C212.9 319.1 209.3 320.6 209 321C208.7 321.5 207.2 322.2 205.7 322.5C204.1 322.9 202.7 323.8 202.5 324.4C200.8 329.9 200.3 388.9 202 390C202.8 390.5 207.2 424 206.8 426.1C206.4 428 209.5 428.3 211.2 426.6C214.5 423.3 265.8 410.7 276.3 410.6C281 410.6 281 410.6 281 403.8C281 398.1 281.3 396.8 282.8 396.4C289.1 394.3 295 387.9 295 383.1C294.9 380.9 282.6 364 271 350.3C270 349.1 265.2 342.8 260.4 336.3C245.6 316.3 245 315.8 233.9 315.4C226.1 315.2 223.2 315.6 217 317.7M342.1 318.8C341 320.5 340 322.2 340 322.8C340 324.5 319.6 364.5 312.9 375.8C308.2 383.8 310.9 384.7 323.8 379.4C340.1 372.8 347.1 369.6 364.2 361.3C372.4 357.3 379.3 353.2 379.9 352.1C382.1 348 380.7 335 378 335C377.4 335 375.1 333.7 372.8 332C370.6 330.4 368.1 329 367.4 329C366.6 329 366 328.6 366 328.1C366 327.6 365 326.8 363.8 326.4C362.6 326.1 358.8 324 355.3 321.9C351.8 319.7 348.4 318 347.7 318C347 318 345.9 317.5 345.3 316.9C344.6 316.2 343.6 316.7 342.1 318.8M180 331.3C158.3 339.7 149.8 345.6 143.8 356.7C137.3 368.5 136.1 389.1 140.5 413.5C145 438.7 144.2 437.2 153.5 439.1C160.3 440.4 162 440.5 164.9 439.3C167.8 438.2 168.4 438.2 169.4 439.6C170.5 441 171.1 441 176.5 439.2C179.8 438.1 185.1 436.4 188.4 435.4C191.6 434.3 194.5 432.9 194.7 432.2C195 431.5 194.5 425.6 193.6 419.2C190.2 395.3 189.2 380.5 189.4 354.2C189.4 339.8 189.3 328 189 328C188.7 328.1 184.7 329.6 180 331.3M371.6 370.5C370.8 371.3 369.7 372 369.1 372C368.5 372 365.2 373.4 361.8 375.1C351.6 380.1 331.5 389.1 325 391.5C318.8 393.8 319 394.4 329.6 410.6C335 418.8 340.3 427.1 341.3 429C345.5 436.9 346.3 437 351.3 430.1C353.8 426.8 356.4 422.7 357.2 421C357.9 419.4 358.8 418 359.1 418C359.5 418 360.3 416.8 360.9 415.3C361.5 413.7 362.4 411.8 362.9 411C368.2 402.2 375.6 382.8 377.6 372.3C378.2 369.3 378.1 369 375.7 369C374.3 369 372.5 369.7 371.6 370.5M301.4 400.9C297.1 403.2 294.5 405.3 293.7 407C292.2 410.2 278.3 430.5 267.1 445.9C263 451.7 259.5 457 259.4 457.8C259.2 458.5 258.4 460 257.4 461.1C255.3 463.4 256 463.7 271 467C276.8 468.2 283.4 469.9 285.8 470.6C288.1 471.4 291.2 472 292.6 472C294 472 296 472.5 297 473C298 473.6 301.5 474.4 304.7 474.9C307.9 475.3 311.2 476 312.1 476.4C314.2 477.3 320.2 471.6 330.4 459C339.4 447.9 339.6 446.5 333.5 436.1C329.9 430 318.3 412.8 316.1 410.3C315.5 409.6 315 408.8 315 408.5C315 408.2 313.5 405.9 311.8 403.5C308.2 398.7 306.4 398.2 301.4 400.9M265 425.1C263.1 425.5 256.3 426.2 250 426.6C239.4 427.1 237.7 427.5 227.5 431.7C208.3 439.6 209 439.2 209 441.8C209 444.1 211 453 211.5 453C211.6 453 213.3 452.4 215.2 451.6C218.4 450.2 219.2 450.4 230 454.1C236.2 456.2 241.8 458 242.5 458C244.2 458 263.2 433.9 268.4 425.3C268.8 424.6 269 424 268.8 424.1C268.6 424.2 266.9 424.6 265 425.1M189.8 445.7C182.7 448.1 183.8 450.3 192.7 451.5C198.7 452.3 200.2 450.9 198.2 446.4C196.9 443.6 196.2 443.6 189.8 445.7M156.4 456.3C151.3 458.5 151.3 458.5 153.6 467C157.3 481.1 164.5 498.9 174.2 518C181.9 533.3 183.2 534.7 186.4 530.8C187.6 529.5 190.3 526.2 192.5 523.5C194.7 520.8 197.9 517 199.6 515.1C205.5 508.3 211.9 498.9 211.5 497.7C211.2 497 208.8 488.2 206 478C203.2 467.9 200.8 459.5 200.7 459.4C200.6 459.2 197.4 458.9 193.6 458.5C189.8 458.2 183.1 457.2 178.6 456.4C164.5 453.9 162 453.9 156.4 456.3M340.7 464.3C335.1 470 329 477.8 329 479.4C329 480.3 330.6 481.4 333.3 482.1C335.6 482.7 339.5 483.8 342 484.6C357.6 489.1 357.6 489.2 347.9 464.8C346.3 460.8 344.3 460.6 340.7 464.3M137.4 464.4C134.9 466.1 128.5 469.4 123.5 471.6C121.3 472.6 115.3 475.8 110.1 478.7C105 481.6 100.4 484 99.9 484C99.5 484 98.9 484.8 98.6 485.8C98.1 487.3 86.7 494 84.7 494C81.5 494 54.7 515 44.6 525.5C20.3 550.6 19.8 574.5 43.5 585.4C45.7 586.5 48.3 587.7 49.2 588.1C58.6 592.7 92.1 595 109 592.1C120.3 590.2 125.4 589 126.4 588C127 587.4 128.5 587 129.8 587C132.1 587 135.8 585.6 142.8 582.3C146 580.7 152.3 574.4 157 568.1C158.4 566.3 160.7 563.4 162.1 561.6C168.8 553.4 174 546 174 544.7C174 543.9 169.9 534.7 164.9 524.3C159.9 514 155.5 504.6 155 503.5C154.5 502.4 153.2 499.3 152 496.5C150.8 493.8 148.9 489 147.9 486.1C146.8 483.1 145.3 479.6 144.5 478.4C143.8 477.2 142.4 473.4 141.5 469.9C139.5 462.3 139.8 462.7 137.4 464.4M215.4 464.8C215.7 465.7 217.1 470.7 218.4 475.9C219.8 481 221.1 485.4 221.3 485.7C221.6 485.9 224.7 482.3 228.4 477.6C232 472.8 234.9 469 234.7 469C234.6 469 230.5 467.7 225.7 466C215.4 462.5 214.7 462.4 215.4 464.8M241.9 480.8C239 484.5 234.8 489.1 232.6 491.1C223.8 499 223.7 499.5 231.6 520.7C239.2 541.4 239.7 542 245.5 537.6C247.3 536.2 249.1 535 249.4 535C249.8 535 254.4 531.8 259.8 527.8C280.4 512.6 305.4 489 303.2 486.8C301.5 485.1 262.8 476 261.5 477C261 477.4 257.8 476.9 254.5 475.9C251.2 474.9 248.2 474 247.8 474C247.5 474 244.8 477 241.9 480.8M315.3 493.4C313.8 494.7 308.7 499.5 304 503.9C284.9 522.2 271.2 533.4 253.3 545C243.9 551.1 243.6 551.9 247.4 559.7C248.7 562.3 253.2 571.3 257.3 579.5C261.4 587.8 266.2 597 268 600C269.8 603 272.6 608 274.3 611C277.9 617.6 284 627.1 285.6 628.5C286.2 629.1 290.1 634.8 294.4 641.2C309.7 664.4 324.8 678.1 337.3 680.4C353 683.3 367.4 668.6 374.5 642.5C375.4 639.2 376.8 634.1 377.7 631.1C380.9 619.7 380.4 595.5 376.4 574.5C371.5 548.9 369 536.9 368 534.5C367.5 533.4 366.8 530.1 366.5 527.3C366.1 524.4 365.4 521.8 364.9 521.4C364.4 521.1 364 519.2 364 517.2C364 515.2 363.3 512.2 362.5 510.6C361.7 509.1 361 506.9 361 505.8C361 500.1 357.2 498.4 330.7 492.5C321.4 490.4 318.6 490.6 315.3 493.4M210.9 518.8C201.1 529.6 189 544.4 189 545.7C188.9 547.5 196.5 561 197.8 561.5C198.6 561.8 201.1 561.2 203.4 560.1C205.7 559 211.6 556.3 216.5 554C229.7 547.8 230.4 546.8 226.4 539.1C225.6 537.7 225 535.8 225 535C225 534.1 224.6 533 224.1 532.5C223.6 531.9 222.3 528.8 221.2 525.5C218.6 517.8 216.9 514 216 514C215.6 514 213.3 516.2 210.9 518.8M175.5 562.3C173.3 565.1 170.9 568.1 170.3 568.8C166.7 572.6 171.6 574.5 177.2 571.6C178.7 570.8 181.2 569.9 182.8 569.5C187 568.6 187.5 566.4 184.5 561.4C181.2 555.8 180.3 555.9 175.5 562.3M227 559.7C224 561.2 217.8 564.1 213.2 566.3C208.6 568.4 204.6 570.9 204.3 571.7C203.7 573.2 206.7 579.3 210.7 584.6C212 586.3 213 588.2 213 588.8C213 589.5 213.4 590 213.9 590C214.4 590 215 590.8 215.4 591.8C215.7 592.7 216.8 594.7 217.7 596.2C228.6 612.6 237.4 624.7 241.4 628.5C243.1 630.2 246 633.5 247.9 636C255.2 645.5 275.3 664.5 282.3 668.4C288 671.6 300.1 674.8 301.7 673.6C301.9 673.4 284.3 649 282 646.3C281.5 645.6 281 644.8 281 644.5C281 644.1 279.9 642.4 278.6 640.7C277.3 638.9 274.5 634.4 272.5 630.5C270.4 626.7 266.7 620.2 264.3 616.1C261.8 612 258.9 607.1 257.7 605.1C254 598.5 240.5 571.6 237.2 564.3C235.4 560.3 233.7 557 233.3 557.1C232.8 557.1 230 558.3 227 559.7"/></svg>
+	<div class="box">
+	<p class="eyebrow">Unreal Engine 5 &middot; WebGPU</p>
 	<h1>Loading the game&hellip;</h1>
 	<div class="sub">The first visit downloads about <span id="dlsize">100</span> MB. Later visits load from the browser cache.</div>
 	<div id="progress"><div></div></div>
@@ -263,9 +310,11 @@ async function start() {
 	const response = await fetch('manifest.json', { cache: 'no-cache' });
 	if (!response.ok) throw new Error('manifest.json not found (HTTP ' + response.status + '). Was the whole dist folder uploaded?');
 	const manifest = await response.json();
-	// Page title = project name (e.g. WebThirdPerson)
-	document.title = manifest.project + ' - Unreal Engine on the Web';
-	$('title').textContent = manifest.project + ' \u2014 Unreal Engine 5 on WebGPU';
+	const NAMES = { WebFirstPerson: 'First Person', WebThirdPerson: 'Third Person', gameAnimationSample: 'Game Animation Sample', StackObot: 'Stack O Bot' };
+	const name = NAMES[manifest.project] || manifest.project;
+	document.title = name + ' \u00b7 dotengine';
+	$('title').textContent = name;
+	$('loader').querySelector('h1').textContent = 'Loading ' + name + '\u2026';
 	const urls = await downloadGame(manifest);
 
 	canvas.width = preset.width;
